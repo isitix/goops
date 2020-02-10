@@ -1,0 +1,38 @@
+# roles/golang/tasks
+# golang
+- name: check if golang has already been downloaded
+  stat:
+    path: "{{working_directory}}/{{golang_archive_file}}"
+  register: golang
+- name: download golang installation archive 
+  get_url:
+    url: "{{golang_url}}/{{golang_archive_file}}"
+    dest: "{{working_directory}}"
+    sha256sum: "{{golang_sha256}}"
+  when: golang.stat.exists == False
+- name: test if golang is already installed
+  stat:
+    path: "/home/{{homeuser}}/go"
+  register: golang_installed
+- name: install go in home directory
+  unarchive: 
+    src: "{{working_directory}}/{{golang_archive_file}}"
+    dest: "/home/{{homeuser}}"
+    owner: "{{homeuser}}"
+    group: "{{homeuser}}"
+    mode: '755'
+  when: golang_installed.stat.exists == False
+- name: add golang to bashrc for {{homeuser}}
+  lineinfile:
+    path: "/home/{{homeuser}}/.bashrc"
+    regexp: 'go/bin'
+    line: "export PATH=\"/home/{{homeuser}}/go/bin:$PATH\""
+    state: present
+    insertafter: EOF
+- name: set GOPATH environment variable in bashrc
+  lineinfile:
+    path: "/home/{{homeuser}}/.bashrc"
+    regexp: 'GOPATH'
+    line: "export GOPATH=\"/home/{{homeuser}}/go/bin\""
+    state: present
+    insertafter: EOF
